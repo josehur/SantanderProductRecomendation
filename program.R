@@ -21,3 +21,6 @@ full$fecha_dato <- lubridate::ymd(full$fecha_dato)
 full[, fecha_alta := lubridate::ymd(fecha_alta)]
 
 summary(full)
+
+
+
