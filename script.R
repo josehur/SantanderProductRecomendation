@@ -2,6 +2,7 @@ library(data.table)
 library(ggplot2)
 library(xgboost)
 library(Matrix)
+library(lubridate)
 
 
 # load data
@@ -10,7 +11,9 @@ data[, submission := FALSE]
 suppressWarnings(data_test <- fread("data/test_ver2.csv"))
 data_test[, submission := TRUE]
 data <- rbind(data, data_test, fill = TRUE)
-data[, ':='(fecha_dato = as.Date(fecha_dato), fecha_alta = as.Date(fecha_alta))]
+# data[, ':='(fecha_dato = as.Date(fecha_dato), fecha_alta = as.Date(fecha_alta))]
+data$fecha_dato <- lubridate::ymd(data$fecha_dato)
+data[, fecha_alta := lubridate::ymd(fecha_alta)]
 setorder(data, ncodpers, fecha_dato)
 
 # select product columns
@@ -35,6 +38,16 @@ for (col in prod_cols) { #not very efficient ...
   }
   cat('done\n')
 }
+
+#############
+purch_var <- paste('purch', prod_cols, sep = '_')
+has_var <- paste('has', prod_cols, sep = '_')
+data[, (purch_var):=lapply(.SD, function(x) x * !(c(NA, x[-.N])) ), by=ncodpers, .SDcols=prod_cols]
+gc()
+# data[, (purch_var):=lapply(.SD, function(x) c(NA, x[-.N])), by=ncodpers, .SDcols=prod_cols]
+data[, (has_var) :=  shift(.SD), by=ncodpers, .SDcols=prod_cols]
+gc()
+#############
 
 positive_m_frac <- data[,mean(n_purch > 0, na.rm = TRUE)] # fraction of customers who buy anything new
 
