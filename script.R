@@ -47,6 +47,12 @@ gc()
 # data[, (purch_var):=lapply(.SD, function(x) c(NA, x[-.N])), by=ncodpers, .SDcols=prod_cols]
 data[, (has_var) :=  shift(.SD), by=ncodpers, .SDcols=prod_cols]
 gc()
+
+data[1:10,lapply(.SD, sum, na.rm = TRUE), .SDcols = purch_var] %>% View
+
+# data[, n_purch := rowSums(.SD,na.rm = TRUE), .SDcols = purch_var]
+data[, n_purch := Reduce(`+`, lapply(.SD, function(x) replace(x, which(is.na(x)), 0))), .SDcols=purch_var]
+
 #############
 
 positive_m_frac <- data[,mean(n_purch > 0, na.rm = TRUE)] # fraction of customers who buy anything new
