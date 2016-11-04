@@ -22,22 +22,22 @@ prod_cols <- colnames(data)[grep('^ind.*ult1$', colnames(data))]
 data[submission == FALSE, n_purch := 0]
 
 # for each product calulate if it was bought in the given month
-for (col in prod_cols) { #not very efficient ...
-  cat(col)
-  purch_var <- paste('purch', col, sep = '_')
-  ok = FALSE
-  while(!ok) { #ugly, but data.table throws me an error randomly 
-    cat('.')
-    try({
-      data[, (purch_var) := (get(col) * (!c(NA, get(col)[-.N]))), by = ncodpers]
-      data[fecha_alta == fecha_dato, (purch_var) := get(col)]
-      data[, (paste0('has_', col)) := c(NA, get(col)[-.N]), by = ncodpers]
-      data[get(purch_var) == 1, n_purch := n_purch + 1]
-      ok = TRUE
-    }, silent = TRUE)
-  }
-  cat('done\n')
-}
+# for (col in prod_cols) { #not very efficient ...
+#   cat(col)
+#   purch_var <- paste('purch', col, sep = '_')
+#   ok = FALSE
+#   while(!ok) { #ugly, but data.table throws me an error randomly 
+#     cat('.')
+#     try({
+#       data[, (purch_var) := (get(col) * (!c(NA, get(col)[-.N]))), by = ncodpers]
+#       data[fecha_alta == fecha_dato, (purch_var) := get(col)]
+#       data[, (paste0('has_', col)) := c(NA, get(col)[-.N]), by = ncodpers]
+#       data[get(purch_var) == 1, n_purch := n_purch + 1]
+#       ok = TRUE
+#     }, silent = TRUE)
+#   }
+#   cat('done\n')
+# }
 
 #############
 purch_var <- paste('purch', prod_cols, sep = '_')
@@ -47,8 +47,6 @@ gc()
 # data[, (purch_var):=lapply(.SD, function(x) c(NA, x[-.N])), by=ncodpers, .SDcols=prod_cols]
 data[, (has_var) :=  shift(.SD), by=ncodpers, .SDcols=prod_cols]
 gc()
-
-data[1:10,lapply(.SD, sum, na.rm = TRUE), .SDcols = purch_var] %>% View
 
 # data[, n_purch := rowSums(.SD,na.rm = TRUE), .SDcols = purch_var]
 data[, n_purch := Reduce(`+`, lapply(.SD, function(x) replace(x, which(is.na(x)), 0))), .SDcols=purch_var]
@@ -65,6 +63,8 @@ positive_m_frac <- data[,mean(n_purch > 0, na.rm = TRUE)] # fraction of customer
 
 # remove product cols (no more needed) and data where nothing new was bought
 melt_data <- data[(n_purch > 0) | (submission == TRUE), -prod_cols, with = FALSE]
+
+# melt_data <- melt_data[ncodpers == "15889",]
 
 # free some memory
 data <- NULL
